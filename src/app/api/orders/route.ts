@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       let variantName: string | undefined;
 
       if (item.variantId) {
-        const variant = product.variants.find((v) => v.id === item.variantId);
+        const variant = product.variants.find((v: any) => v.id === item.variantId);
         if (!variant || variant.status !== 'ACTIVE') {
           return NextResponse.json({ error: `ตัวเลือกสินค้า ${variant?.name || ''} ไม่พร้อมจำหน่าย` }, { status: 400 });
         }

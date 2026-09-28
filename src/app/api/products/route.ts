@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAuth, logAudit } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const product = await prisma.$transaction(async (tx) => {
+    const product = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const p = await tx.product.create({
         data: {
           name: name.trim(),

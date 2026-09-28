@@ -59,16 +59,16 @@ export async function GET(req: NextRequest) {
       include: { items: true },
     });
 
-    const todaySales = todayOrders.reduce((sum, o) => sum + o.total, 0);
+    const todaySales = todayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
     const todayOrdersCount = todayOrders.length;
     const todayItemsSold = todayOrders.reduce(
-      (sum, o) => sum + o.items.reduce((iSum, item) => iSum + item.quantity, 0),
+      (sum: number, o: any) => sum + o.items.reduce((iSum: number, item: any) => iSum + item.quantity, 0),
       0
     );
     const todayAverageOrder = todayOrdersCount > 0 ? todaySales / todayOrdersCount : 0;
 
     // Period totals
-    const periodRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    const periodRevenue = paidOrders.reduce((sum: number, o: any) => sum + o.total, 0);
     const periodOrdersCount = paidOrders.length;
     let periodTotalCost = 0;
     let periodItemsSold = 0;
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
     });
 
     const lowStockProducts = allActiveProducts
-      .filter((p) => p.stock <= p.lowStockThreshold)
+      .filter((p: any) => p.stock <= p.lowStockThreshold)
       .slice(0, 5);
 
     // 7. Recent orders

@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { generatePromptPayPayload, generatePromptPayQRCodeDataURL } from '@/lib/promptpay';
 import { CreatePaymentInput, PaymentMethod, PaymentProvider, PaymentResult, PaymentStatus } from './types';
 
@@ -64,7 +65,7 @@ export class PromptPayPaymentProvider implements PaymentProvider {
     changeGiven?: number
   ): Promise<PaymentResult> {
     // Perform transactional update: Payment PAID + Order PAID + Inventory deduction (Idempotent)
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const payment = await tx.payment.findUnique({
         where: { id: paymentId },
         include: {
@@ -175,7 +176,7 @@ export class PromptPayPaymentProvider implements PaymentProvider {
   }
 
   async cancelPayment(paymentId: string, reason?: string): Promise<PaymentResult> {
-    const payment = await prisma.$transaction(async (tx) => {
+    const payment = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const p = await tx.payment.update({
         where: { id: paymentId },
         data: { status: 'CANCELLED' },

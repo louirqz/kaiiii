@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAuth, logAudit } from '@/lib/auth';
 
 export async function GET(
@@ -63,7 +64,7 @@ export async function PUT(
     const oldPrice = existingProduct.sellingPrice;
     const newPrice = sellingPrice !== undefined ? parseFloat(sellingPrice) : oldPrice;
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const p = await tx.product.update({
         where: { id },
         data: {

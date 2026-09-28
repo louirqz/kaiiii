@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAuth, logAudit } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     const validTypes = ['IN', 'OUT', 'ADJUSTMENT', 'RETURN'];
     const adjustmentType = validTypes.includes(type) ? type : 'ADJUSTMENT';
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let prevStock = 0;
       let newStock = 0;
       let itemName = '';

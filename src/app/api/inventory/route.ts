@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       orderBy: { stock: 'asc' },
     });
 
-    const inventoryItems = products.map((p) => {
+    const inventoryItems = products.map((p: any) => {
       let status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' = 'IN_STOCK';
       if (p.stock <= 0) {
         status = 'OUT_OF_STOCK';
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         lowStockThreshold: p.lowStockThreshold,
         status,
         hasVariants: p.variants.length > 0,
-        variants: p.variants.map((v) => {
+        variants: p.variants.map((v: any) => {
           let vStatus: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' = 'IN_STOCK';
           if (v.stock <= 0) vStatus = 'OUT_OF_STOCK';
           else if (v.stock <= p.lowStockThreshold) vStatus = 'LOW_STOCK';
@@ -68,14 +68,14 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    const filtered = inventoryItems.filter((item) => {
+    const filtered = inventoryItems.filter((item: any) => {
       if (filter === 'low_stock') return item.status === 'LOW_STOCK';
       if (filter === 'out_of_stock') return item.status === 'OUT_OF_STOCK';
       return true;
     });
 
-    const lowStockCount = inventoryItems.filter((i) => i.status === 'LOW_STOCK').length;
-    const outOfStockCount = inventoryItems.filter((i) => i.status === 'OUT_OF_STOCK').length;
+    const lowStockCount = inventoryItems.filter((i: any) => i.status === 'LOW_STOCK').length;
+    const outOfStockCount = inventoryItems.filter((i: any) => i.status === 'OUT_OF_STOCK').length;
 
     return NextResponse.json({
       items: filtered,
