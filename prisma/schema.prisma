@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String                 @id @default(cuid())
+  name                String
+  username            String                 @unique
+  email               String                 @unique
+  passwordHash        String
+  role                String                 @default("CASHIER") // ADMIN, MANAGER, CASHIER
+  status              String                 @default("ACTIVE") // ACTIVE, INACTIVE
+  mustChangePassword  Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  orders              Order[]
+  auditLogs           AuditLog[]
+  inventoryTxns       InventoryTransaction[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  icon        String    @default("🥟")
+  description String?
+  sortOrder   Int       @default(0)
+  status      String    @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model Product {
+  id                  String                 @id @default(cuid())
+  name                String
+  description         String?
+  image               String?
+  categoryId          String
+  category            Category               @relation(fields: [categoryId], references: [id])
+  sku                 String?                @unique
+  barcode             String?                @unique
+  costPrice           Float                  @default(0)
+  sellingPrice        Float
+  stock               Int                    @default(0)
+  lowStockThreshold   Int                    @default(5)
+  status              String                 @default("ACTIVE") // ACTIVE, INACTIVE
+  deletedAt           DateTime?              // Soft delete
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  variants            ProductVariant[]
+  inventoryTxns       InventoryTransaction[]
+  orderItems          OrderItem[]
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model ProductVariant {
+  id            String                 @id @default(cuid())
+  productId     String
+  product       Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name          String                 // e.g. "5 ชิ้น", "10 ชิ้น", "รสชีส"
+  sku           String?                @unique
+  costPrice     Float?
+  price         Float
+  stock         Int                    @default(0)
+  status        String                 @default("ACTIVE")
+  orderItems    OrderItem[]
+  inventoryTxns InventoryTransaction[]
+}
+
+model InventoryTransaction {
+  id            String          @id @default(cuid())
+  productId     String
+  product       Product         @relation(fields: [productId], references: [id])
+  variantId     String?
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  type          String          // IN, OUT, ADJUSTMENT, SALE, RETURN
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String?
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id])
+  orderId       String?
+  createdAt     DateTime        @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique // NN-YYYYMMDD-XXXX
+  customerName   String?     @default("ลูกค้าหน้าร้าน")
+  subtotal       Float
+  discountType   String      @default("NONE") // NONE, FIXED, PERCENTAGE
+  discountValue  Float       @default(0)
+  discountAmount Float       @default(0)
+  total          Float
+  paymentMethod  String      @default("CASH") // CASH, QR_PROMPTPAY, OTHER
+  paymentStatus  String      @default("PENDING") // PENDING, PAID, FAILED, CANCELLED, EXPIRED
+  orderStatus    String      @default("PENDING") // PENDING, PAID, PREPARING, READY, COMPLETED, CANCELLED, REFUNDED
+  cashierId      String?
+  cashier        User?       @relation(fields: [cashierId], references: [id])
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+  payments       Payment[]
+
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+}
+
+model OrderItem {
+  id                  String          @id @default(cuid())
+  orderId             String
+  order               Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId           String?
+  product             Product?        @relation(fields: [productId], references: [id])
+  variantId           String?
+  variant             ProductVariant? @relation(fields: [variantId], references: [id])
+  productNameSnapshot String
+  variantNameSnapshot String?
+  priceSnapshot       Float
+  costSnapshot        Float           @default(0)
+  quantity            Int
+  subtotal            Float
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method         String    // CASH, QR_PROMPTPAY, OTHER
+  status         String    @default("PENDING") // PENDING, PAID, FAILED, CANCELLED, EXPIRED
+  amount         Float
+  amountTendered Float?
+  changeGiven    Float?
+  referenceNo    String?
+  qrPayload      String?
+  provider       String    @default("MOCK_PROMPTPAY")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model StoreSetting {
+  id                    String   @id @default("default")
+  storeName             String   @default("nnichna")
+  storeLogo             String?
+  address               String?  @default("123 ซอยสุขุมวิท 39 แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110")
+  phone                 String?  @default("089-123-4567")
+  promptPayId           String?  @default("0891234567")
+  currency              String   @default("THB")
+  taxRate               Float    @default(0)
+  receiptFooter         String?  @default("ขอบคุณที่อุดหนุน nnichna! เกี๊ยวซ่าทำสดใหม่ทุกวัน ทานให้อร่อยนะคะ/ครับ")
+  lowStockThreshold     Int      @default(5)
+  orderPrefix           String   @default("NN")
+  maxCashierDiscountPct Float    @default(10)
+  updatedAt             DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  userName   String?
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
